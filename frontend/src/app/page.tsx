@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { api, Memo, MemoCreate } from "@/lib/api";
+import { useRouter } from "next/navigation";
+import { api, Memo, MemoCreate, User } from "@/lib/api";
 import MemoForm from "@/components/MemoForm";
 import MemoCard from "@/components/MemoCard";
 import styles from "./page.module.css";
 
 export default function Home() {
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
   const [memos, setMemos] = useState<Memo[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -18,15 +21,33 @@ export default function Home() {
       setMemos(data);
       setError(null);
     } catch {
-      setError("Failed to load memos. Is the backend running?");
+      setError("メモの取得に失敗しました");
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchMemos();
-  }, [fetchMemos]);
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      router.replace("/login");
+      return;
+    }
+    api.me()
+      .then((u) => {
+        setUser(u);
+        fetchMemos();
+      })
+      .catch(() => {
+        localStorage.removeItem("access_token");
+        router.replace("/login");
+      });
+  }, [router, fetchMemos]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("access_token");
+    router.replace("/login");
+  };
 
   const handleCreate = async (data: MemoCreate) => {
     setCreating(true);
@@ -34,7 +55,7 @@ export default function Home() {
       const memo = await api.createMemo(data);
       setMemos((prev) => [memo, ...prev]);
     } catch {
-      setError("Failed to create memo.");
+      setError("メモの作成に失敗しました");
     } finally {
       setCreating(false);
     }
@@ -50,11 +71,19 @@ export default function Home() {
     setMemos((prev) => prev.filter((m) => m.id !== id));
   };
 
+  if (!user) return null;
+
   return (
     <main className={styles.main}>
       <header className={styles.header}>
-        <h1 className={styles.title}>Memo App</h1>
-        <p className={styles.subtitle}>{memos.length} memo{memos.length !== 1 ? "s" : ""}</p>
+        <div>
+          <h1 className={styles.title}>Memo App</h1>
+          <p className={styles.subtitle}>{memos.length} memo{memos.length !== 1 ? "s" : ""}</p>
+        </div>
+        <div className={styles.userInfo}>
+          <span className={styles.email}>{user.email}</span>
+          <button className={styles.logoutBtn} onClick={handleLogout}>ログアウト</button>
+        </div>
       </header>
 
       <section className={styles.formSection}>
@@ -68,7 +97,7 @@ export default function Home() {
         {loading ? (
           <p className={styles.empty}>Loading...</p>
         ) : memos.length === 0 ? (
-          <p className={styles.empty}>No memos yet. Create your first one above!</p>
+          <p className={styles.empty}>メモがまだありません。上から作成してみてください！</p>
         ) : (
           memos.map((memo) => (
             <MemoCard

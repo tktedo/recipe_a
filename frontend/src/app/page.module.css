@@ -6,6 +6,10 @@
 
 .header {
   margin-bottom: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 .title {
@@ -19,6 +23,34 @@
   margin: 0;
   font-size: 14px;
   color: #999;
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.email {
+  font-size: 13px;
+  color: #888;
+}
+
+.logoutBtn {
+  padding: 7px 14px;
+  background: #f0f0f0;
+  color: #555;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.logoutBtn:hover {
+  background: #e0e0e0;
 }
 
 .formSection {
